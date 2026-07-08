@@ -8,10 +8,18 @@
 # tracked paths; add new kit files here explicitly.
 /*
 !/.gitignore
+!/LICENSE
 !/README.md
 !/SETUP.md
 !/setup.sh
 !/overlay/
+# The un-ignore above is recursive, so personal-data shapes inside the
+# overlay are re-ignored here — a real answers.yml or a dropped resume
+# must never become stageable, even by mistake.
+/overlay/data/*
+!/overlay/data/answers.example.yml
+/overlay/intake/*
+!/overlay/intake/README.md
 !/seed/
 !/docs/
 /docs/*
