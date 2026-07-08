@@ -61,15 +61,21 @@ rather than pasting the whole thing anywhere.
 
 - [x] **Workspace layering.** After setup, confirm: every upstream file
   landed (e.g. `AGENTS.md`, `modes/*.md`, `scan.mjs`, `generate-pdf.mjs`,
-  `set-status.mjs`, `stats.mjs`); the overlay landed (`overlay/CLAUDE.md` →
-  `./CLAUDE.md`, `.claude/skills/{intake,apply,jobs}/SKILL.md`,
-  `.claude/settings.json`, `.mcp.json`, `apply/*.mjs`,
-  `apply/launch-chrome.sh` executable); seeds landed exactly once
-  (`config/archetype-emphasis.md`, `modes/_custom.md`); upstream's own
-  `README.md` and `CLAUDE.md` survive as `README.upstream.md` and
-  `CLAUDE.upstream.md`; and `.career-ops-version` contains the scaffolded
-  version string.
-  *(verified during build, 2026-07-07 — 25/25 path checks passed)*
+  `set-status.mjs`, `stats.mjs`); the overlay landed
+  (`.claude/skills/{intake,apply,jobs}/SKILL.md`, `.claude/settings.json`,
+  `.mcp.json`, `apply/*.mjs`, `apply/launch-chrome.sh` executable); seeds
+  landed exactly once (`config/archetype-emphasis.md`, `modes/_custom.md`);
+  upstream's own `README.md` and `CLAUDE.md` survive as `README.upstream.md`
+  and `CLAUDE.upstream.md`; and `.career-ops-version` contains the scaffolded
+  version string. The kit's own `CLAUDE.md` is **not** an overlay file — it is
+  a tracked repo-root file, present from clone time and protected from the
+  upstream sync by `setup.sh`'s `--exclude=/CLAUDE.md`, so confirm it is still
+  the kit copy (not upstream's) after setup. `test/bootstrap.test.mjs` guards
+  this invariant.
+  *(verified during build, 2026-07-07 — 25/25 path checks passed. Addendum
+  2026-07-08: `CLAUDE.md` relocated from `overlay/` to the tracked repo root so
+  it exists at clone time; the overlay no longer ships it, and the root copy is
+  now covered by `test/bootstrap.test.mjs`.)*
 
 - [x] **Idempotent re-run.** Plant test values in `cv.md`,
   `config/profile.yml`, `modes/_profile.md`, `config/portals.yml`, the two
@@ -89,11 +95,21 @@ before/after checksum diff (`diff` output should be empty).
 ## Stage 2 — First run
 
 - [ ] Open the freshly set-up folder in the Claude app's **Code tab** (no
-  prior conversation, no prompt from you). **Expected:** Claude greets and
-  offers `/intake` unprompted — first-run detection in `overlay/CLAUDE.md`
-  fires because `config/profile.yml` doesn't exist yet.
+  prior conversation, no prompt from you). **Expected:** the proactive
+  first-run flow in `CLAUDE.md` fires without being asked and works the ordered
+  checks — install check (`node_modules/`/`AGENTS.md`), then the Simplify/Chrome
+  check via `node apply/doctor.mjs`, then, because `config/profile.yml` doesn't
+  exist yet, an offer of `/intake`. On an already-installed workspace it should
+  land on that `/intake` offer.
   **Record:** screenshot of the opening exchange →
   `docs/test-evidence/02-first-run.png`.
+
+- [ ] **Fresh-clone bootstrap (the link-onboarding path).** `git clone` the repo
+  to a scratch dir with nothing installed. **Expected:** `CLAUDE.md` is present
+  at clone time (it is a tracked root file), and its step 1 recognizes the
+  not-installed state and offers to run `./setup.sh`. `CLAUDE.upstream.md` does
+  **not** exist yet, and the flow does not tell her to read it until after setup.
+  *(covered by `test/bootstrap.test.mjs`; verify once live in the Code tab.)*
 
 ---
 
@@ -351,7 +367,7 @@ before/after checksum diff.
   python3 ~/.claude/tools/prose_grammar_gate.py overlay/.claude/skills/intake/SKILL.md
   python3 ~/.claude/tools/prose_grammar_gate.py overlay/.claude/skills/apply/SKILL.md
   python3 ~/.claude/tools/prose_grammar_gate.py overlay/.claude/skills/jobs/SKILL.md
-  python3 ~/.claude/tools/prose_grammar_gate.py overlay/CLAUDE.md
+  python3 ~/.claude/tools/prose_grammar_gate.py CLAUDE.md
   ```
   **Expected:** no findings, or every finding fixed and the gate re-run
   clean.

@@ -14,6 +14,24 @@ can't happen any other way.
 
 Everything below is just detail. Take it at your own pace.
 
+## The fastest way to start
+
+If you'd like to skip straight to it, open the Claude app, go to the **Code**
+tab, and paste this message in:
+
+> Set up my career kit from
+> https://github.com/ryanhurstdataconsulting/career-kit — clone it into my home
+> folder, install it, and then walk me through connecting Simplify. I'll click
+> anything that needs my sign-in.
+
+That's it. Claude will download the kit, install it, and then take you through
+the one-time Simplify setup step by step — pausing whenever something (like
+signing in) is yours to do. You don't need to read the rest of this first; it's
+here if you ever want the fuller picture.
+
+(Already have the folder on your Mac? Even simpler — just open it in the Code
+tab and Claude will pick up from there.)
+
 ## What you'll need
 
 - **A Mac** — you already have one.
