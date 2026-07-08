@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "mcp__playwright__browser_click|mcp__playwright__browser_type|mcp__playwright__browser_evaluate|mcp__playwright__browser_run_code_unsafe",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/apply/submit-guard.mjs\""
+          }
+        ]
+      }
+    ]
+  }
+}
