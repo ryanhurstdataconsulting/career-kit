@@ -20,8 +20,25 @@ const FIELD_RE =
   /\b(?:text\s*field|text\s*box|textbox|input|combobox|listbox|checkbox|radio|dropdown|select|url\s*field|email\s*field|search\s*(?:field|box)|field)\b/i;
 const BUTTON_RE = /\bbutton\b|\blink\b/i;
 
-// Keys that can submit a form when pressed with focus in a field.
-const SUBMIT_KEY_RE = /^(?:Enter|Return|NumpadEnter)$/i;
+// The base keys that can submit a form when pressed with focus in a field.
+const ENTER_KEY_RE = /^(?:Enter|Return|NumpadEnter)$/i;
+
+// True when a Playwright key string ("Enter", "Control+Enter", "Shift+Enter", …)
+// resolves to a submit-capable Enter press. Bare Enter and any Ctrl/Cmd/Meta/Alt
+// combo count — Ctrl/Cmd+Enter is a common textarea submit accelerator. A
+// Shift-only combo does NOT: Shift+Enter inserts a newline, so it is allowed.
+function isSubmitKeyPress(key) {
+  const parts = String(key)
+    .split('+')
+    .map((p) => p.trim())
+    .filter(Boolean);
+  if (parts.length === 0) return false;
+  const base = parts[parts.length - 1];
+  if (!ENTER_KEY_RE.test(base)) return false;
+  const mods = parts.slice(0, -1).map((m) => m.toLowerCase());
+  if (mods.length > 0 && mods.every((m) => m === 'shift')) return false;
+  return true;
+}
 
 const chunks = [];
 process.stdin.on('data', (c) => chunks.push(c));
@@ -63,7 +80,7 @@ process.stdin.on('end', () => {
 
   if (tool === 'mcp__playwright__browser_press_key') {
     const key = String(input.key ?? '');
-    if (SUBMIT_KEY_RE.test(key)) {
+    if (isSubmitKeyPress(key)) {
       deny(`pressing "${key}" can submit the form.`);
     }
   }
@@ -72,6 +89,13 @@ process.stdin.on('end', () => {
     tool === 'mcp__playwright__browser_evaluate' ||
     tool === 'mcp__playwright__browser_run_code_unsafe'
   ) {
+    // browser_run_code_unsafe can load its script from a `filename` instead of
+    // inline code, and per its contract the inline code is ignored when filename
+    // is set — so an inline scan would read nothing (fail-open). We cannot vet a
+    // file the tool will run, so a filename source is refused outright.
+    if (input.filename) {
+      deny('running a script from a file cannot be reviewed for submit actions.');
+    }
     const code = String(input.function ?? input.code ?? '');
     if (/\.submit\s*\(|requestSubmit\s*\(/i.test(code)) {
       deny('the script calls a form submit API.');
@@ -81,9 +105,13 @@ process.stdin.on('end', () => {
     if (/\.(?:click|dblclick)\s*\(/i.test(code)) {
       deny('the script performs a scripted click, which bypasses the review gate.');
     }
-    // A scripted Enter/Return keypress can submit a focused form.
-    if (/\.(?:press|down)\s*\(\s*[`'"](?:Enter|Return|NumpadEnter)\b/i.test(code)) {
-      deny('the script presses Enter, which can submit a form.');
+    // A scripted keypress can submit a focused form. Judge the pressed key the
+    // same way as a direct browser_press_key call: bare Enter, or an Enter combo
+    // like Ctrl/Cmd/Meta+Enter. Shift+Enter is a newline, not a submit.
+    for (const m of code.matchAll(/\.(?:press|down)\s*\(\s*[`'"]([^`'"]+)[`'"]/gi)) {
+      if (isSubmitKeyPress(m[1])) {
+        deny('the script presses a key that can submit a form.');
+      }
     }
   }
 

@@ -151,3 +151,35 @@ test('unparseable stdin is allowed (exit 0)', () => {
 test('an unrelated tool is allowed', () => {
   allowed({ tool_name: 'mcp__playwright__browser_snapshot', tool_input: {} });
 });
+
+// ---- Finding 4: Ctrl/Cmd/Meta+Enter accelerator; filename source is fail-closed ----
+test('press_key Control+Enter is blocked', () => {
+  blocked({
+    tool_name: 'mcp__playwright__browser_press_key',
+    tool_input: { key: 'Control+Enter' },
+  });
+});
+test('press_key Meta+Enter is blocked', () => {
+  blocked({ tool_name: 'mcp__playwright__browser_press_key', tool_input: { key: 'Meta+Enter' } });
+});
+test('press_key Shift+Enter is allowed (newline, not a submit)', () => {
+  allowed({ tool_name: 'mcp__playwright__browser_press_key', tool_input: { key: 'Shift+Enter' } });
+});
+test('run_code_unsafe: a filename source is blocked (cannot be reviewed)', () => {
+  blocked({
+    tool_name: 'mcp__playwright__browser_run_code_unsafe',
+    tool_input: { filename: '/tmp/x.js' },
+  });
+});
+test('run_code_unsafe: keyboard.press("Control+Enter") is blocked', () => {
+  blocked({
+    tool_name: 'mcp__playwright__browser_run_code_unsafe',
+    tool_input: { code: 'await page.keyboard.press("Control+Enter")' },
+  });
+});
+test('run_code_unsafe: keyboard.press("Shift+Enter") is allowed', () => {
+  allowed({
+    tool_name: 'mcp__playwright__browser_run_code_unsafe',
+    tool_input: { code: 'await page.keyboard.press("Shift+Enter")' },
+  });
+});
