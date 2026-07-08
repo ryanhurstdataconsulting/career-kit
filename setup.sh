@@ -22,6 +22,12 @@ bad()  { printf '  \033[31m✗\033[0m %s\n' "$*"; }
 
 # ---------- 1. Preflight ----------
 bold "Checking this Mac…"
+if [ "$(uname -s)" != "Darwin" ]; then
+  bad "career-kit is built for macOS."
+  echo "    It relies on Mac-only conveniences (the 'open' command and a"
+  echo "    dedicated Chrome profile). Please run it on your Mac."
+  exit 1
+fi
 if ! command -v node >/dev/null 2>&1; then
   bad "Node.js is not installed."
   echo "    career-kit runs on Node.js (free). Opening the download page —"
@@ -58,22 +64,32 @@ if [ ! -f "$UP/AGENTS.md" ]; then
   bad "Scaffold looks wrong (no AGENTS.md in $UP)"
   exit 1
 fi
+if [ ! -f "$UP/package.json" ]; then
+  bad "Scaffold looks wrong (no package.json in $UP)"
+  exit 1
+fi
 UP_VERSION="$(node -p "require('$UP/package.json').version")"
 ok "career-ops v$UP_VERSION scaffolded"
 
 # ---------- 3. Sync upstream into this folder ----------
 # Always excluded: this repo's own control files, upstream git metadata, every
-# user-layer file from upstream's DATA_CONTRACT.md (by NAME), and the four
-# user-data trees (as whole directories, in BOTH modes — a repair re-run must
-# never overwrite a live tracker, regardless of what upstream's scaffold ships).
-# The by-name user files never ship in the scaffold, so those excludes are a
-# no-op on first install and a safety net on every later run.
+# user-layer file from upstream's DATA_CONTRACT.md, and the four user-data trees
+# (as whole directories, in BOTH modes — a repair re-run must never overwrite a
+# live tracker, regardless of what upstream's scaffold ships). The user files
+# never ship in the scaffold, so those excludes are a no-op on first install and
+# a safety net on every later run.
+#
+# Every pattern is ANCHORED with a leading "/" so it matches ONLY at the sync
+# root. Without the slash, rsync matches the final path component at any depth,
+# so a nested upstream file that happens to share a name (e.g. a nested
+# README.md, or any nested dir named data/) would be dropped silently. Keep the
+# leading slashes.
 bold "Layering career-ops into this folder…"
-EXCLUDES="--exclude=.git --exclude=.gitignore --exclude=LICENSE --exclude=README.md --exclude=CLAUDE.md \
- --exclude=cv.md --exclude=portals.yml --exclude=article-digest.md \
- --exclude=config/profile.yml --exclude=config/portals.yml \
- --exclude=modes/_profile.md --exclude=modes/_custom.md \
- --exclude=data/ --exclude=output/ --exclude=reports/ --exclude=interview-prep/"
+EXCLUDES="--exclude=/.git --exclude=/.gitignore --exclude=/LICENSE --exclude=/README.md --exclude=/CLAUDE.md \
+ --exclude=/cv.md --exclude=/portals.yml --exclude=/article-digest.md \
+ --exclude=/config/profile.yml --exclude=/config/portals.yml \
+ --exclude=/modes/_profile.md --exclude=/modes/_custom.md \
+ --exclude=/data/ --exclude=/output/ --exclude=/reports/ --exclude=/interview-prep/"
 # shellcheck disable=SC2086
 rsync -a $EXCLUDES "$UP/" "$KIT_ROOT/"
 if [ "$MODE" = "install" ]; then
@@ -118,12 +134,15 @@ if ! npx playwright install chromium >"$TMP/playwright.log" 2>&1; then
 fi
 ok "PDF renderer (headless Chromium) installed"
 
-printf '%s\n' "$UP_VERSION" > "$KIT_ROOT/.career-ops-version"
-
 # ---------- 6. Health checks ----------
 bold "Running health checks…"
 node doctor.mjs || true   # upstream doctor is informative pre-onboarding
 node apply/doctor.mjs --setup
+
+# Pin the upstream version only AFTER the kit health check passes. The check
+# above has no "|| true", so under `set -e` a failed run aborts here — and a
+# broken install never records a version it did not successfully stand up.
+printf '%s\n' "$UP_VERSION" > "$KIT_ROOT/.career-ops-version"
 
 bold "You're all set."
 echo "  Open this folder in the Claude app's Code tab, and Claude will take it from there."

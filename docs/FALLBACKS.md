@@ -187,14 +187,14 @@ expectations:
 
 | ATS | Approximate autofill coverage |
 |---|---|
-| Greenhouse / Lever | 85–90 % |
-| Workday | 70 % |
-| iCIMS | 40–50 % |
+| Greenhouse / Lever | 85–90% |
+| Workday | 70% |
+| iCIMS | 40–50% |
 
 So on a Greenhouse or Lever posting, most fields land automatically and the agent
 mainly verifies. On an iCIMS posting, expect roughly half the fields to need
-manual completion — that is normal, not a failure. Reaching an 85–90 % fill on
-one site and a 40–50 % fill on another is exactly the spread to plan for.
+manual completion — that is normal, not a failure. Reaching an 85–90% fill on
+one site and a 40–50% fill on another is exactly the spread to plan for.
 
 Multi-step systems (Workday is the classic) walk through several pages before the
 review screen. On those, the agent may click only **safe navigation** controls —
@@ -288,7 +288,7 @@ These statements come from the plan, upstream conventions, or standard tooling
 behavior rather than from a file inspected for this document. They are called out
 so nobody treats them as verified from the repo:
 
-- **The ATS accuracy percentages** (85–90 % / 70 % / 40–50 %) come from the
+- **The ATS accuracy percentages** (85–90% / 70% / 40–50%) come from the
   project plan's research notes, not from a live measurement in this repo.
 - **The stale-lock remedy** (`rm -f ~/.career-kit-chrome/SingletonLock`) and the
   "Chrome already holding the profile without the debug port" behavior are
