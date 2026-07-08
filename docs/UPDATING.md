@@ -34,7 +34,7 @@ at all.
 **Repo control files and metadata** — excluded so the upstream sync never clobbers the kit's own
 identity:
 - `.git`, `.gitignore`
-- `README.md`, `CLAUDE.md`
+- `README.md`, `CLAUDE.md`, `LICENSE`
 
 **User-layer files, excluded by exact name** — these never ship in upstream's scaffold, so the
 excludes are a no-op on first install and a safety net on every later run:
@@ -76,9 +76,10 @@ and differs only in skipping the install-only seeding pass, so it writes nothing
 - Upstream code paths: `modes/`, the deterministic scripts (`scan.mjs`, `generate-pdf.mjs`,
   `set-status.mjs`, `stats.mjs`, `doctor.mjs`, and the rest), the CV template, and
   `.claude/skills/career-ops/`.
-- `README.upstream.md` and `CLAUDE.upstream.md` — fresh copies of upstream's own README and
-  CLAUDE.md, taken right after the sync so the kit's own `README.md`/`CLAUDE.md` (which are
-  excluded, per above) can bridge to whatever upstream currently says.
+- `README.upstream.md`, `CLAUDE.upstream.md`, and `LICENSE.upstream` — fresh copies of
+  upstream's own README, CLAUDE.md, and LICENSE, taken right after the sync so the kit's own
+  `README.md`/`CLAUDE.md`/`LICENSE` (which are excluded, per above) can bridge to whatever
+  upstream currently says.
 - Node dependencies: `npm install` at the kit root, plus the headless-Chromium browser via
   `npx playwright install chromium` (upstream's PDF renderer needs it).
 - The `.career-ops-version` pin — overwritten with whatever version `npx @santifer/career-ops

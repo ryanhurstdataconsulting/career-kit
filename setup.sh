@@ -69,7 +69,7 @@ ok "career-ops v$UP_VERSION scaffolded"
 # The by-name user files never ship in the scaffold, so those excludes are a
 # no-op on first install and a safety net on every later run.
 bold "Layering career-ops into this folder…"
-EXCLUDES="--exclude=.git --exclude=.gitignore --exclude=README.md --exclude=CLAUDE.md \
+EXCLUDES="--exclude=.git --exclude=.gitignore --exclude=LICENSE --exclude=README.md --exclude=CLAUDE.md \
  --exclude=cv.md --exclude=portals.yml --exclude=article-digest.md \
  --exclude=config/profile.yml --exclude=config/portals.yml \
  --exclude=modes/_profile.md --exclude=modes/_custom.md \
@@ -86,11 +86,14 @@ if [ "$MODE" = "install" ]; then
     fi
   done
 fi
-# Upstream's README and CLAUDE.md stay available under *.upstream.md names;
-# the kit's own CLAUDE.md (from overlay/) bridges to them.
+# Upstream's README, CLAUDE.md, and LICENSE stay available under *.upstream
+# names; the kit's own CLAUDE.md (from overlay/) bridges to them.
 cp "$UP/README.md" "$KIT_ROOT/README.upstream.md"
 cp "$UP/CLAUDE.md" "$KIT_ROOT/CLAUDE.upstream.md"
-ok "Upstream synced (its README/CLAUDE.md kept as *.upstream.md)"
+if [ -f "$UP/LICENSE" ]; then
+  cp "$UP/LICENSE" "$KIT_ROOT/LICENSE.upstream"
+fi
+ok "Upstream synced (its README/CLAUDE.md/LICENSE kept under *.upstream names)"
 
 # ---------- 4. Kit overlay ----------
 bold "Applying the career-kit overlay…"

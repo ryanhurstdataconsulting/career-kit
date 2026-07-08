@@ -42,9 +42,9 @@ files. `setup.sh` (idempotent; safe to re-run) does the assembly:
    run then seeds those four trees with `rsync -a --ignore-existing`, so a
    fresh install materializes whatever upstream ships there without ever
    overwriting an existing file; `--update` skips the seeding entirely.
-4. **Preserve upstream docs** — upstream's `README.md` and `CLAUDE.md` are
-   copied aside as `README.upstream.md` and `CLAUDE.upstream.md`; the kit's own
-   `CLAUDE.md` bridges to them.
+4. **Preserve upstream docs** — upstream's `README.md`, `CLAUDE.md`, and
+   `LICENSE` are copied aside as `README.upstream.md`, `CLAUDE.upstream.md`,
+   and `LICENSE.upstream`; the kit's own `CLAUDE.md` bridges to them.
 5. **Overlay** — `rsync -a overlay/ ./` (kit files, overwritten every run) then
    `rsync -a --ignore-existing seed/ ./` (user-owned starters, copied once and
    never clobbered).
@@ -96,7 +96,8 @@ career-kit/
 After `setup.sh` runs, the same folder also holds the materialized upstream
 (`AGENTS.md`, `modes/`, the `*.mjs` scripts, `templates/`,
 `.claude/skills/career-ops/`, `config/*.example.yml`, `README.upstream.md`,
-`CLAUDE.upstream.md`), `node_modules/`, `.career-ops-version`, and — as she uses
+`CLAUDE.upstream.md`, `LICENSE.upstream`), `node_modules/`,
+`.career-ops-version`, and — as she uses
 it — her personal data (`config/profile.yml`, `cv.md`, `data/`, `output/`,
 `reports/`). None of that is tracked; the whitelist `.gitignore` ignores
 everything at the root (`/*`) and re-includes only the kit paths above.
