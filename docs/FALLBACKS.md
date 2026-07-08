@@ -207,7 +207,7 @@ agent pauses and hands the page back to her; that is the design, not a stall.
 ## 6. The submit-guard, honestly
 
 `apply/submit-guard.mjs` is a PreToolUse hook wired in `overlay/.claude/settings.json`
-for `browser_click`, `browser_type`, `browser_evaluate`, and
+for `browser_click`, `browser_type`, `browser_press_key`, `browser_evaluate`, and
 `browser_run_code_unsafe`. When it blocks a call, it prints a line beginning
 `SUBMIT GUARD: blocked …` and stops the action.
 
@@ -217,9 +217,14 @@ for `browser_click`, `browser_type`, `browser_evaluate`, and
   `complete application`, `confirm application`).
 - A `browser_type` with `submit: true` — because typing with submit pressed sends
   Enter, which can submit the form.
+- A `browser_press_key` press of a submit-capable key: bare `Enter`, `Return`, or
+  `NumpadEnter`, or the Ctrl/Cmd/Meta+Enter textarea-submit accelerator.
+  Shift+Enter is allowed — it inserts a newline, not a submit.
 - A `browser_evaluate` or `browser_run_code_unsafe` script that calls a form
-  submit API (`.submit(` or `requestSubmit(`), or that clicks a submit-looking
-  selector inside the evaluated code.
+  submit API (`.submit(` or `requestSubmit(`), performs any scripted click or
+  double-click, presses a submit-capable key the same way `browser_press_key`
+  does, or is sourced from a `filename` instead of inline code — a file the
+  guard cannot vet is refused outright.
 
 **What it deliberately allows**
 - **"Apply now" buttons.** These open the application form; they do not send it.
@@ -227,10 +232,12 @@ for `browser_click`, `browser_type`, `browser_evaluate`, and
   purpose.
 
 **Documented residual limits (the honest part)**
-- **`browser_press_key` is not hooked.** Legitimate dropdowns and comboboxes need
-  Enter to confirm a selection, so pressing keys is left open. That means a
-  key-press could, in theory, submit a form the guard never inspected. This is a
-  known, accepted gap.
+- **The hook is focus-blind.** It sees only the key pressed or the code being
+  run, not which element has focus, so `browser_press_key` blocks Enter
+  unconditionally — even when focus is somewhere harmless, like a search box.
+  That is a deliberate, conservative choice; the apply skill guides the agent
+  to CLICK a highlighted combobox/`<select>` option to confirm it rather than
+  press Enter.
 - **No static text filter is perfect.** The guard matches on labels and code
   text; an oddly named submit button could slip a match, or a harmless button
   could trip one.

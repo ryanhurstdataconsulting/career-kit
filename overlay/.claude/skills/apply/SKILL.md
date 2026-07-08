@@ -46,9 +46,15 @@ of that:
      [--match "<comma-separated rewordings>"]`
   4. Fill the field and continue. Never guess at an answer.
 - **Multi-step forms.** Click only Next / Continue / Save and Continue. When a
-  submit-like control appears, stop — that page belongs to her.
+  submit-like control appears, stop — that page belongs to her. Because the
+  guard blocks Enter, select combobox/autocomplete options by clicking them
+  (`browser_click`, or `browser_select_option` for a native `<select>`)
+  rather than pressing Enter to confirm a highlighted option.
 
 ## 4. The review gate (say exactly this)
+
+Before the gate message, name any fields you left blank or were unsure
+about, so she can finish them before she reviews and submits.
 
 "The application is filled in and waiting in Chrome. Please look it over
 carefully — check every field, especially anything I filled in for you. When
