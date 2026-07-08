@@ -20,6 +20,12 @@ const FIELD_RE =
   /\b(?:text\s*field|text\s*box|textbox|input|combobox|listbox|checkbox|radio|dropdown|select|url\s*field|email\s*field|search\s*(?:field|box)|field)\b/i;
 const BUTTON_RE = /\bbutton\b|\blink\b/i;
 
+// A selector or description naming an element with type=submit (e.g.
+// "button[type=submit]", 'input[type="submit"]'). Such an element is always a
+// submit control regardless of how the click targets it — a zero-false-positive
+// signal used to catch a bare-`target` submit click that carries no description.
+const SUBMIT_TYPE_RE = /type\s*=\s*["']?submit\b/i;
+
 // The base keys that can submit a form when pressed with focus in a field.
 const ENTER_KEY_RE = /^(?:Enter|Return|NumpadEnter)$/i;
 
@@ -64,6 +70,16 @@ process.stdin.on('end', () => {
 
   if (tool === 'mcp__playwright__browser_click') {
     const label = String(input.element ?? '');
+    const target = String(input.target ?? '');
+    // `target` (a snapshot ref or CSS selector) is REQUIRED by the tool schema;
+    // `element` (a human description) is OPTIONAL — so a submit click can arrive
+    // with only `target` and no description to scan. An input/button carrying
+    // type=submit is unambiguously a submit control however it is targeted, so
+    // refuse it from either field. This is a zero-false-positive signal: no
+    // non-submit element carries type=submit.
+    if (SUBMIT_TYPE_RE.test(target) || SUBMIT_TYPE_RE.test(label)) {
+      deny('the target element is a submit control (type=submit).');
+    }
     if (SUBMIT_RE.test(label)) {
       // Exempt a submit-labeled control only when it is clearly a form field
       // (e.g. "Submit your GitHub URL text field"), never a button or link.
@@ -111,9 +127,20 @@ process.stdin.on('end', () => {
     // A scripted keypress can submit a focused form. Judge the pressed key the
     // same way as a direct browser_press_key call: bare Enter, or an Enter combo
     // like Ctrl/Cmd/Meta+Enter. Shift+Enter is a newline, not a submit.
-    for (const m of code.matchAll(/\.(?:press|down)\s*\(\s*[`'"]([^`'"]+)[`'"]/gi)) {
-      if (isSubmitKeyPress(m[1])) {
-        deny('the script presses a key that can submit a form.');
+    //
+    // The key's argument position differs across the Playwright API: the
+    // key-first forms — keyboard.press(key) / keyboard.down(key) /
+    // locator.press(key) / elementHandle.press(key) — put the key in the FIRST
+    // quoted argument, but page.press(selector, key) / frame.press(selector, key)
+    // put the SELECTOR first and the key SECOND. Scan both positions so neither
+    // form can slip an Enter through.
+    const KEY_1ST = /\.(?:press|down)\s*\(\s*[`'"]([^`'"]+)[`'"]/gi;
+    const KEY_2ND = /\.(?:press|down)\s*\(\s*[`'"][^`'"]*[`'"]\s*,\s*[`'"]([^`'"]+)[`'"]/gi;
+    for (const re of [KEY_1ST, KEY_2ND]) {
+      for (const m of code.matchAll(re)) {
+        if (isSubmitKeyPress(m[1])) {
+          deny('the script presses a key that can submit a form.');
+        }
       }
     }
   }

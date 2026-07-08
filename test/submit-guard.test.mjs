@@ -202,3 +202,70 @@ test('evaluate: a scripted submit is still blocked even when a filename is set',
     tool_input: { function: '() => document.forms[0].submit()', filename: '/tmp/out.txt' },
   });
 });
+
+// ---- Re-review fix: the key is the SECOND arg of page.press / frame.press ----
+// keyboard.press(key) / locator.press(key) take the key first, but
+// page.press(selector, key) / frame.press(selector, key) take the selector first
+// and the key second. The scan must inspect the second quoted argument too, or a
+// scripted `page.press('#field', 'Enter')` slips a submit through run_code_unsafe.
+test('run_code_unsafe: page.press(selector, "Enter") is blocked (key is 2nd arg)', () => {
+  blocked({
+    tool_name: 'mcp__playwright__browser_run_code_unsafe',
+    tool_input: { code: "async (page) => { await page.press('#message', 'Enter'); }" },
+  });
+});
+test('run_code_unsafe: page.press(selector, "Enter") double-quoted is blocked', () => {
+  blocked({
+    tool_name: 'mcp__playwright__browser_run_code_unsafe',
+    tool_input: { code: 'async (page) => { await page.press("#search", "Enter"); }' },
+  });
+});
+test('run_code_unsafe: frame.press(selector, "Enter") via mainFrame() is blocked', () => {
+  blocked({
+    tool_name: 'mcp__playwright__browser_run_code_unsafe',
+    tool_input: { code: "async (page) => { await page.mainFrame().press('#q', 'Enter'); }" },
+  });
+});
+test('run_code_unsafe: page.press(selector, "Control+Enter") is blocked', () => {
+  blocked({
+    tool_name: 'mcp__playwright__browser_run_code_unsafe',
+    tool_input: { code: "async (page) => { await page.press('#c', 'Control+Enter'); }" },
+  });
+});
+test('run_code_unsafe: page.press(selector, "Tab") is allowed (2nd-arg non-submit key)', () => {
+  allowed({
+    tool_name: 'mcp__playwright__browser_run_code_unsafe',
+    tool_input: { code: "async (page) => { await page.press('#c', 'Tab'); }" },
+  });
+});
+test('run_code_unsafe: page.press(selector, "Shift+Enter") is allowed (newline)', () => {
+  allowed({
+    tool_name: 'mcp__playwright__browser_run_code_unsafe',
+    tool_input: { code: "async (page) => { await page.press('#c', 'Shift+Enter'); }" },
+  });
+});
+
+// ---- Re-review fix: browser_click's `target` is required, `element` optional ----
+// The tool schema makes `target` (a snapshot ref or CSS selector) required and
+// `element` (a human description) optional. A submit click can therefore arrive
+// with only `target` and no description to scan, so a type=submit control must be
+// refused from `target` too — while a benign field targeted by selector must not
+// over-block.
+test('click: bare target button[type=submit] with no element is blocked', () => {
+  blocked({
+    tool_name: 'mcp__playwright__browser_click',
+    tool_input: { target: 'button[type=submit]' },
+  });
+});
+test('click: bare target input[type="submit"] with no element is blocked', () => {
+  blocked({
+    tool_name: 'mcp__playwright__browser_click',
+    tool_input: { target: 'input[type="submit"]' },
+  });
+});
+test('click: a benign field targeted by selector is allowed', () => {
+  allowed({
+    tool_name: 'mcp__playwright__browser_click',
+    tool_input: { target: '#first-name' },
+  });
+});
