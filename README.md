@@ -245,9 +245,12 @@ re-runs both doctors — her profile and history are untouched. Always run an
 The tracked repo contains no personal data by construction, so either path is
 safe:
 
-- **Private GitHub repo (preferred — enables updates):**
-  `gh repo create career-kit --private --source=. --push`, then add her as a
-  collaborator or send her the link. She clones and follows `SETUP.md`.
+- **Public GitHub repo (this one — enables updates):** the kit is published at
+  <https://github.com/ryanhurstdataconsulting/career-kit>. Send her the link;
+  she runs
+  `git clone https://github.com/ryanhurstdataconsulting/career-kit.git`
+  (or downloads the ZIP from the green **Code** button) and follows `SETUP.md`.
+  Later updates are one `git pull` plus `./setup.sh --update` away.
 - **Zip / AirDrop:** export just the tracked (kit-only) files with
   `git archive -o career-kit.zip HEAD` — or zip the folder minus `.git/`,
   `node_modules/`, and any personal data — then AirDrop it. She unzips and
