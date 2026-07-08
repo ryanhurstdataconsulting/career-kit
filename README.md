@@ -258,5 +258,8 @@ safe:
 
 Either way she opens the folder in the Claude app's Code tab and runs
 `./setup.sh` (or lets Claude run it on first open).
-</content>
-</invoke>
+
+## License
+
+MIT — see [LICENSE](LICENSE). The scaffolded upstream,
+[career-ops](https://github.com/santifer/career-ops), is itself MIT-licensed.
