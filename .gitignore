@@ -13,6 +13,9 @@
 !/SETUP.md
 !/setup.sh
 !/overlay/
+# Maintainer-only regression tests. Tracked, but NOT part of overlay/, so
+# setup.sh never copies them into the recipient's install.
+!/test/
 # The un-ignore above is recursive, so personal-data shapes inside the
 # overlay are re-ignored here — a real answers.yml or a dropped resume
 # must never become stageable, even by mistake.

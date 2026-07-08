@@ -4,9 +4,9 @@
 // Upstream career-ops persists answers per report; this bank is cross-application.
 //
 // Usage:
-//   node apply/answers.mjs --lookup "Are you authorized to work in the US?"
-//   node apply/answers.mjs --add --label "..." --answer "..." [--match "a,b"]
-//   node apply/answers.mjs --list [--full]
+// node apply/answers.mjs --lookup "Are you authorized to work in the US?"
+// node apply/answers.mjs --add --label "..." --answer "..." [--match "a,b"]
+// node apply/answers.mjs --list [--full]
 //
 // The bank lives in data/answers.yml — gitignored, local-only. --list prints
 // labels only unless --full is given, so answers never leak into casual output.
@@ -17,7 +17,11 @@ import { fileURLToPath } from 'node:url';
 import yaml from 'js-yaml';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const FILE = join(ROOT, 'data', 'answers.yml');
+// data/answers.yml by default; CAREER_KIT_ANSWERS overrides it so tests can
+// point at a throwaway fixture without touching her real answer bank.
+const FILE = process.env.CAREER_KIT_ANSWERS
+  ? resolve(process.env.CAREER_KIT_ANSWERS)
+  : join(ROOT, 'data', 'answers.yml');
 const HEADER = `# career-kit answer bank — managed by apply/answers.mjs.
 # Local-only and gitignored: this file can hold salary and EEO answers.
 # Format reference: data/answers.example.yml
@@ -48,10 +52,15 @@ function save(bank) {
   writeFileSync(FILE, HEADER + yaml.dump(bank, { lineWidth: 100 }), 'utf8');
 }
 
-// Normalize a label for matching: lowercase, strip punctuation, collapse spaces.
+// Normalize a label for matching: lowercase, collapse intra-word punctuation so
+// acronyms and contractions become one token ("U.S."->"us", "don't"->"dont"),
+// then strip remaining punctuation and collapse spaces. The intra-word step only
+// removes a . ' or ’ that follows a letter, so a decimal like "3.5" (dot after a
+// digit) is left for the general replace to split, exactly as before.
 function norm(s) {
   return String(s)
     .toLowerCase()
+    .replace(/(?<=[a-z])['’.]+(?=[a-z]|$|\s|[^a-z0-9])/gi, '')
     .replace(/[^a-z0-9\s]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
@@ -79,9 +88,13 @@ if (args.lookup !== undefined) {
   let hit =
     // 1. exact normalized label
     bank.answers.find((e) => norm(e.label) === q) ??
-    // 2. any declared match term contained in the query
+    // 2. any declared match term present in the query as whole token(s), so a
+    // short term like "us" hits "work in the us" but not "business".
     bank.answers.find((e) =>
-      (Array.isArray(e.match) ? e.match : []).some((t) => norm(t) && q.includes(norm(t)))
+      (Array.isArray(e.match) ? e.match : []).some((t) => {
+        const nt = norm(t);
+        return nt !== '' && new RegExp(`(?:^| )${nt}(?: |$)`).test(q);
+      })
     ) ??
     // 3. substring either way, for labels long enough to be unambiguous
     bank.answers.find((e) => {
@@ -101,7 +114,7 @@ if (args.lookup !== undefined) {
 if (args.add) {
   if (!args.label || !args.answer) fail('--add needs both --label and --answer.');
   const entry = {
-    label: args.label,
+    label: args.label.trim(),
     answer: args.answer,
     ...(args.match
       ? { match: args.match.split(',').map((t) => t.trim()).filter(Boolean) }
