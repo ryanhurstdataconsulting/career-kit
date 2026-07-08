@@ -1,0 +1,28 @@
+# career-kit answer bank — durable answers to recurring application-form questions.
+#
+# The real file (data/answers.yml) is created automatically the first time an
+# answer is saved, and it NEVER leaves this computer (it is gitignored — it can
+# hold salary and EEO answers). Claude manages it via:
+#
+#   node apply/answers.mjs --lookup "Are you authorized to work in the US?"
+#   node apply/answers.mjs --add --label "..." --answer "..." [--match "term1,term2"]
+#   node apply/answers.mjs --list          # labels only (privacy-safe)
+#
+# Each entry: `label` is the question as it appeared on a form, `answer` is the
+# stored reply, and optional `match` terms let the lookup catch rewordings.
+answers:
+  - label: "Are you legally authorized to work in the United States?"
+    answer: "Yes"
+    match: ["authorized to work", "work authorization"]
+  - label: "Will you now or in the future require sponsorship for employment visa status?"
+    answer: "No"
+    match: ["sponsorship", "require a visa"]
+  - label: "How did you hear about this job?"
+    answer: "Job board"
+    match: ["hear about this"]
+  - label: "What are your salary expectations?"
+    answer: "Flexible, depending on the overall package"
+    match: ["salary expectation", "desired salary", "compensation expectation"]
+  - label: "Gender"
+    answer: "Prefer not to answer"   # EEO questions are always optional
+    match: []
