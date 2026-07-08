@@ -1,0 +1,21 @@
+# career-kit tracks ONLY kit-authored files.
+#
+# Everything setup.sh materializes into this directory — the career-ops
+# upstream (scaffolded by `npx @santifer/career-ops init`), node_modules,
+# and every piece of personal data (config/profile.yml, cv.md, data/*,
+# reports/*, output/*, data/answers.yml with salary and EEO answers) —
+# stays untracked by design. The whitelist below is the complete list of
+# tracked paths; add new kit files here explicitly.
+/*
+!/.gitignore
+!/README.md
+!/SETUP.md
+!/setup.sh
+!/overlay/
+!/seed/
+!/docs/
+/docs/*
+!/docs/TEST-CHECKLIST.md
+!/docs/POE-VARIANT.md
+!/docs/FALLBACKS.md
+!/docs/UPDATING.md
