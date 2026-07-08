@@ -90,10 +90,13 @@ process.stdin.on('end', () => {
     tool === 'mcp__playwright__browser_run_code_unsafe'
   ) {
     // browser_run_code_unsafe can load its script from a `filename` instead of
-    // inline code, and per its contract the inline code is ignored when filename
-    // is set — so an inline scan would read nothing (fail-open). We cannot vet a
-    // file the tool will run, so a filename source is refused outright.
-    if (input.filename) {
+    // inline `code`, and per its contract the inline code is ignored when a
+    // filename is set — so an inline scan would read nothing (fail-open). We
+    // cannot vet a file the tool will run, so that source is refused outright.
+    // browser_evaluate is different: its `filename` only names where the RESULT
+    // is saved, while `function` is always the reviewable code source — so a
+    // filename there is harmless and must not be blocked.
+    if (tool === 'mcp__playwright__browser_run_code_unsafe' && input.filename) {
       deny('running a script from a file cannot be reviewed for submit actions.');
     }
     const code = String(input.function ?? input.code ?? '');

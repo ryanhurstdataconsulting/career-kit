@@ -183,3 +183,22 @@ test('run_code_unsafe: keyboard.press("Shift+Enter") is allowed', () => {
     tool_input: { code: 'await page.keyboard.press("Shift+Enter")' },
   });
 });
+
+// ---- Re-review fix: `filename` means different things in the two script tools ----
+// browser_run_code_unsafe LOADS code from `filename` (fail-open risk → refused);
+// browser_evaluate only SAVES its result there, so a filename is harmless and the
+// `function` is still what gets scanned. The filename refusal must not over-block
+// a legitimate evaluate-and-save.
+test('evaluate: a benign read that saves to a filename is allowed', () => {
+  allowed({
+    tool_name: 'mcp__playwright__browser_evaluate',
+    tool_input: { function: '() => document.title', filename: '/tmp/title.txt' },
+  });
+});
+test('evaluate: a scripted submit is still blocked even when a filename is set', () => {
+  // The filename must not short-circuit the scan of `function`.
+  blocked({
+    tool_name: 'mcp__playwright__browser_evaluate',
+    tool_input: { function: '() => document.forms[0].submit()', filename: '/tmp/out.txt' },
+  });
+});
