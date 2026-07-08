@@ -103,7 +103,8 @@ if [ "$MODE" = "install" ]; then
   done
 fi
 # Upstream's README, CLAUDE.md, and LICENSE stay available under *.upstream
-# names; the kit's own CLAUDE.md (from overlay/) bridges to them.
+# names; the kit's own CLAUDE.md — pre-placed at the repo root and protected by
+# the anchored EXCLUDES above (so this sync never overwrites it) — bridges to them.
 cp "$UP/README.md" "$KIT_ROOT/README.upstream.md"
 cp "$UP/CLAUDE.md" "$KIT_ROOT/CLAUDE.upstream.md"
 if [ -f "$UP/LICENSE" ]; then
@@ -112,6 +113,10 @@ fi
 ok "Upstream synced (its README/CLAUDE.md/LICENSE kept under *.upstream names)"
 
 # ---------- 4. Kit overlay ----------
+# The overlay carries every kit file EXCEPT CLAUDE.md: that one is tracked at the
+# repo root so it is present the moment the repo is cloned (before this installer
+# ever runs) and drives the very first onboarding turn. It is not shipped from
+# overlay/, and §3's --exclude=/CLAUDE.md keeps the upstream sync from clobbering it.
 bold "Applying the career-kit overlay…"
 rsync -a "$KIT_ROOT/overlay/" "$KIT_ROOT/"
 # Seeds are user-layer starters: copied once, never overwritten afterwards.

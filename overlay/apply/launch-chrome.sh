@@ -8,6 +8,7 @@ set -u
 PORT=9223
 PROFILE="$HOME/.career-kit-chrome"
 CHROME="${CHROME_PATH:-/Applications/Google Chrome.app/Contents/MacOS/Google Chrome}"
+SIMPLIFY_URL="https://simplify.jobs/copilot"
 
 if curl -sf --max-time 2 "http://localhost:$PORT/json/version" >/dev/null 2>&1; then
   echo "✓ The job-hunt Chrome window is already running (port $PORT)."
@@ -21,11 +22,15 @@ if [ ! -x "$CHROME" ]; then
 fi
 
 mkdir -p "$PROFILE"
+# Open the Simplify Copilot page as the startup tab so the one-time
+# install/sign-in step lands in front of her the moment the window appears —
+# no MCP driving required during the bootstrap session.
 nohup "$CHROME" \
   --user-data-dir="$PROFILE" \
   --remote-debugging-port="$PORT" \
   --no-first-run \
   --no-default-browser-check \
+  "$SIMPLIFY_URL" \
   >/dev/null 2>&1 &
 
 sleep 2
@@ -37,5 +42,6 @@ else
 fi
 
 echo
-echo "First time in this window? Install the Simplify Copilot extension HERE"
-echo "(not in your normal Chrome) and sign in: https://simplify.jobs/copilot"
+echo "This window opened on the Simplify Copilot page. First time here? In THIS"
+echo "window (not your normal Chrome): install the Simplify Copilot extension,"
+echo "create a free account, and sign in — all at $SIMPLIFY_URL"

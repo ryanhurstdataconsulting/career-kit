@@ -44,7 +44,8 @@ files. `setup.sh` (idempotent; safe to re-run) does the assembly:
    overwriting an existing file; `--update` skips the seeding entirely.
 4. **Preserve upstream docs** — upstream's `README.md`, `CLAUDE.md`, and
    `LICENSE` are copied aside as `README.upstream.md`, `CLAUDE.upstream.md`,
-   and `LICENSE.upstream`; the kit's own `CLAUDE.md` bridges to them.
+   and `LICENSE.upstream`; the kit's own `CLAUDE.md` (tracked at the repo root,
+   protected by the anchored `--exclude=/CLAUDE.md`) bridges to them.
 5. **Overlay** — `rsync -a overlay/ ./` (kit files, overwritten every run) then
    `rsync -a --ignore-existing seed/ ./` (user-owned starters, copied once and
    never clobbered).
@@ -64,6 +65,8 @@ below), so the repo you gift carries no personal data.
 career-kit/
 ├── README.md                 # this file — the maintainer guide
 ├── SETUP.md                  # recipient-facing setup guide (accounts + first run)
+├── CLAUDE.md                 # kit house rules + first-run onboarding; present at clone
+│                             #   time, bridges to CLAUDE.upstream.md once installed
 ├── setup.sh                  # idempotent installer: scaffold → overlay → deps → doctors
 ├── .gitignore                # whitelist: tracks ONLY the kit's own files
 ├── docs/                     # maintainer docs (each file whitelisted by name)
@@ -72,7 +75,6 @@ career-kit/
 │   ├── FALLBACKS.md          # manual apply paths; browser_press_key residual-risk note
 │   └── POE-VARIANT.md        # optional: run the interview on Poe (Claude-Fable-5)
 ├── overlay/                  # copied onto the workspace root every run (kit-owned)
-│   ├── CLAUDE.md             # kit house rules; bridges to CLAUDE.upstream.md
 │   ├── .mcp.json             # Playwright MCP → CDP at http://localhost:9223
 │   ├── .claude/
 │   │   ├── settings.json     # PreToolUse hook wiring the submit guard
