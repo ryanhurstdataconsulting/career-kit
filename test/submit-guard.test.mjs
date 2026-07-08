@@ -269,3 +269,77 @@ test('click: a benign field targeted by selector is allowed', () => {
     tool_input: { target: '#first-name' },
   });
 });
+
+// ---- Re-review fix: a synthetic / Playwright-dispatched click also submits ----
+// A .click()/.dblclick() method call is not the only scripted click. Dispatching a
+// synthetic DOM click — el.dispatchEvent(new MouseEvent('click')), a PointerEvent, a
+// plain Event, or the legacy initMouseEvent('click', …) — runs the target's
+// activation behavior, so a submit button submits with no `.click(` in the source.
+// Playwright's own dispatchEvent helper does the same and, like .press(), takes the
+// event type either first (locator.dispatchEvent('click')) or second
+// (page.dispatchEvent(selector, 'click')). All must block. A non-activating event —
+// mousedown, or an 'input'/'change' event fired to notify a framework — must stay
+// allowed.
+test('evaluate: dispatchEvent(new MouseEvent("click")) is blocked', () => {
+  blocked({
+    tool_name: 'mcp__playwright__browser_evaluate',
+    tool_input: {
+      function:
+        "() => document.querySelector('button[type=submit]').dispatchEvent(new MouseEvent('click'))",
+    },
+  });
+});
+test('run_code_unsafe: page.evaluate dispatching a synthetic click is blocked', () => {
+  blocked({
+    tool_name: 'mcp__playwright__browser_run_code_unsafe',
+    tool_input: {
+      code:
+        "async (page) => { await page.evaluate(() => document.querySelector('button[type=submit]').dispatchEvent(new MouseEvent('click'))); }",
+    },
+  });
+});
+test('run_code_unsafe: page.dispatchEvent(selector, "click") is blocked (type is 2nd arg)', () => {
+  blocked({
+    tool_name: 'mcp__playwright__browser_run_code_unsafe',
+    tool_input: {
+      code: "async (page) => { await page.dispatchEvent('button[type=submit]', 'click'); }",
+    },
+  });
+});
+test('run_code_unsafe: locator.dispatchEvent("click") is blocked (type is 1st arg)', () => {
+  blocked({
+    tool_name: 'mcp__playwright__browser_run_code_unsafe',
+    tool_input: {
+      code: "async (page) => { await page.locator('#submit').dispatchEvent('click'); }",
+    },
+  });
+});
+test('evaluate: dispatchEvent(new PointerEvent("click")) is blocked', () => {
+  blocked({
+    tool_name: 'mcp__playwright__browser_evaluate',
+    tool_input: { function: "() => btn.dispatchEvent(new PointerEvent('click'))" },
+  });
+});
+test('evaluate: legacy initMouseEvent("click") is blocked', () => {
+  blocked({
+    tool_name: 'mcp__playwright__browser_evaluate',
+    tool_input: {
+      function:
+        "() => { const e = document.createEvent('MouseEvents'); e.initMouseEvent('click', true, true); btn.dispatchEvent(e); }",
+    },
+  });
+});
+test('evaluate: dispatchEvent(new Event("input")) is allowed (framework notify, not a click)', () => {
+  allowed({
+    tool_name: 'mcp__playwright__browser_evaluate',
+    tool_input: {
+      function: "() => input.dispatchEvent(new Event('input', { bubbles: true }))",
+    },
+  });
+});
+test('run_code_unsafe: page.dispatchEvent(selector, "input") is allowed', () => {
+  allowed({
+    tool_name: 'mcp__playwright__browser_run_code_unsafe',
+    tool_input: { code: "async (page) => { await page.dispatchEvent('#email', 'input'); }" },
+  });
+});

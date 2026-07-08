@@ -124,6 +124,24 @@ process.stdin.on('end', () => {
     if (/\.(?:click|dblclick)\s*\(/i.test(code)) {
       deny('the script performs a scripted click, which bypasses the review gate.');
     }
+    // A .click() call is not the only scripted click. Dispatching a synthetic DOM
+    // click event runs the target's activation behavior even for an untrusted event,
+    // so a submit button submits with no `.click(` anywhere in the source. Catch the
+    // constructor and dispatch spellings: el.dispatchEvent(new MouseEvent('click')),
+    // a PointerEvent, a plain Event, and the legacy createEvent/initMouseEvent('click')
+    // form. Playwright's own dispatchEvent helper takes the event type in either
+    // position, like .press(): locator.dispatchEvent('click') puts it FIRST, while
+    // page.dispatchEvent(selector, 'click') puts the selector first and the type
+    // SECOND — scan both. The type must be a COMPLETE 'click'/'dblclick' literal, so
+    // a non-activating event ('mousedown', 'input', 'change') and a benign selector
+    // like '#click-tracker' do not match. These use .test() (no /g state to reset).
+    const CLICK_EVT_1ST =
+      /(?:dispatchEvent|new\s+\w*Event|init(?:Mouse)?Event)\s*\(\s*[`'"](?:click|dblclick)[`'"]/i;
+    const CLICK_EVT_2ND =
+      /\.dispatchEvent\s*\(\s*[`'"][^`'"]*[`'"]\s*,\s*[`'"](?:click|dblclick)[`'"]/i;
+    if (CLICK_EVT_1ST.test(code) || CLICK_EVT_2ND.test(code)) {
+      deny('the script dispatches a synthetic click, which bypasses the review gate.');
+    }
     // A scripted keypress can submit a focused form. Judge the pressed key the
     // same way as a direct browser_press_key call: bare Enter, or an Enter combo
     // like Ctrl/Cmd/Meta+Enter. Shift+Enter is a newline, not a submit.
