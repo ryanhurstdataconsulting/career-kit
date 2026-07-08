@@ -6,11 +6,22 @@
 // deliberately no override flag: a blocked call here is the system working.
 //
 // Wired in .claude/settings.json for: browser_click, browser_type,
-// browser_evaluate, browser_run_code_unsafe. Exit code 2 blocks the call and
-// feeds stderr back to the agent.
+// browser_press_key, browser_evaluate, browser_run_code_unsafe. Exit code 2
+// blocks the call and feeds stderr back to the agent.
 
 const SUBMIT_RE =
   /\bsubmit\b|\bsend\s+(my\s+|your\s+)?application\b|\bfinish\s+application\b|\bcomplete\s+application\b|\bconfirm\s+application\b/i;
+
+// A submit-looking label that is clearly a form field the agent needs to focus
+// (a text field, combobox, etc.) rather than a submit BUTTON — e.g. "Submit
+// your GitHub URL text field". FIELD_RE must describe an input; BUTTON_RE
+// (a button or link) always wins, so "Submit application button" stays blocked.
+const FIELD_RE =
+  /\b(?:text\s*field|text\s*box|textbox|input|combobox|listbox|checkbox|radio|dropdown|select|url\s*field|email\s*field|search\s*(?:field|box)|field)\b/i;
+const BUTTON_RE = /\bbutton\b|\blink\b/i;
+
+// Keys that can submit a form when pressed with focus in a field.
+const SUBMIT_KEY_RE = /^(?:Enter|Return|NumpadEnter)$/i;
 
 const chunks = [];
 process.stdin.on('data', (c) => chunks.push(c));
@@ -37,12 +48,24 @@ process.stdin.on('end', () => {
   if (tool === 'mcp__playwright__browser_click') {
     const label = String(input.element ?? '');
     if (SUBMIT_RE.test(label)) {
-      deny(`the target element ("${label}") looks like a submit control.`);
+      // Exempt a submit-labeled control only when it is clearly a form field
+      // (e.g. "Submit your GitHub URL text field"), never a button or link.
+      const isField = FIELD_RE.test(label) && !BUTTON_RE.test(label);
+      if (!isField) {
+        deny(`the target element ("${label}") looks like a submit control.`);
+      }
     }
   }
 
   if (tool === 'mcp__playwright__browser_type' && input.submit === true) {
     deny('typing with submit: true presses Enter, which can submit a form.');
+  }
+
+  if (tool === 'mcp__playwright__browser_press_key') {
+    const key = String(input.key ?? '');
+    if (SUBMIT_KEY_RE.test(key)) {
+      deny(`pressing "${key}" can submit the form.`);
+    }
   }
 
   if (
@@ -53,8 +76,14 @@ process.stdin.on('end', () => {
     if (/\.submit\s*\(|requestSubmit\s*\(/i.test(code)) {
       deny('the script calls a form submit API.');
     }
-    if (/\.click\s*\(/i.test(code) && SUBMIT_RE.test(code)) {
-      deny('the script clicks something that looks like a submit control.');
+    // Any scripted click bypasses the browser_click guard above, so block all
+    // of them — the review gate exists precisely so nothing clicks on her behalf.
+    if (/\.(?:click|dblclick)\s*\(/i.test(code)) {
+      deny('the script performs a scripted click, which bypasses the review gate.');
+    }
+    // A scripted Enter/Return keypress can submit a focused form.
+    if (/\.(?:press|down)\s*\(\s*[`'"](?:Enter|Return|NumpadEnter)\b/i.test(code)) {
+      deny('the script presses Enter, which can submit a form.');
     }
   }
 
