@@ -343,3 +343,35 @@ test('run_code_unsafe: page.dispatchEvent(selector, "input") is allowed', () => 
     tool_input: { code: "async (page) => { await page.dispatchEvent('#email', 'input'); }" },
   });
 });
+
+// ---- Re-review fix: two fail-closed over-blocks the hardening diff introduced ----
+// (a) SUBMIT_TYPE_RE must match only the HTML `type=submit` attribute, not a custom
+// `data-type=submit` — the latter is a legitimate selector the diff wrongly blocked.
+// The real type=submit selector must still block (see the bare-target cases above).
+test('click: bare target [data-type=submit] is allowed (custom attr, not type=submit)', () => {
+  allowed({
+    tool_name: 'mcp__playwright__browser_click',
+    tool_input: { target: '[data-type=submit]' },
+  });
+});
+test('click: bare target [type=submit] still blocks after the lookbehind change', () => {
+  blocked({
+    tool_name: 'mcp__playwright__browser_click',
+    tool_input: { target: '[type=submit]' },
+  });
+});
+// (b) FIELD_RE must recognize a textarea, so a submit-labeled cover-letter textarea
+// is treated as a field to focus (allowed), not a submit button (blocked). A submit
+// BUTTON with no field word still loses to BUTTON_RE and stays blocked (covered above).
+test('click on a submit-labeled textarea is allowed', () => {
+  allowed({
+    tool_name: 'mcp__playwright__browser_click',
+    tool_input: { element: 'Submit your cover letter textarea' },
+  });
+});
+test('click on a submit-labeled text area (spaced) is allowed', () => {
+  allowed({
+    tool_name: 'mcp__playwright__browser_click',
+    tool_input: { element: 'Submit your response text area' },
+  });
+});

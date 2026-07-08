@@ -17,14 +17,18 @@ const SUBMIT_RE =
 // your GitHub URL text field". FIELD_RE must describe an input; BUTTON_RE
 // (a button or link) always wins, so "Submit application button" stays blocked.
 const FIELD_RE =
-  /\b(?:text\s*field|text\s*box|textbox|input|combobox|listbox|checkbox|radio|dropdown|select|url\s*field|email\s*field|search\s*(?:field|box)|field)\b/i;
+  /\b(?:text\s*field|text\s*box|textbox|text\s*area|textarea|input|combobox|listbox|checkbox|radio|dropdown|select|url\s*field|email\s*field|search\s*(?:field|box)|field)\b/i;
 const BUTTON_RE = /\bbutton\b|\blink\b/i;
 
-// A selector or description naming an element with type=submit (e.g.
-// "button[type=submit]", 'input[type="submit"]'). Such an element is always a
-// submit control regardless of how the click targets it — a zero-false-positive
-// signal used to catch a bare-`target` submit click that carries no description.
-const SUBMIT_TYPE_RE = /type\s*=\s*["']?submit\b/i;
+// A selector or description naming an element with the HTML type=submit
+// attribute (e.g. "button[type=submit]", 'input[type="submit"]'). Such an
+// element is always a submit control regardless of how the click targets it — a
+// zero-false-positive signal used to catch a bare-`target` submit click that
+// carries no description. The negative lookbehind matches only the standalone
+// `type` attribute, so a custom attribute like `[data-type=submit]` does not
+// (its "type" is preceded by a "-"), while `[type=submit]` and
+// `button[type=submit]` still do.
+const SUBMIT_TYPE_RE = /(?<![\w-])type\s*=\s*["']?submit\b/i;
 
 // The base keys that can submit a form when pressed with focus in a field.
 const ENTER_KEY_RE = /^(?:Enter|Return|NumpadEnter)$/i;
