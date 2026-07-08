@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // career-kit queue — a prioritized view over upstream's data/applications.md.
 //
-//   node apply/queue.mjs --next   best not-yet-applied job, as JSON
-//   node apply/queue.mjs --list   all rows, most actionable first, as JSON
+// node apply/queue.mjs --next — best not-yet-applied job, as JSON
+// node apply/queue.mjs --list — all rows, most actionable first, as JSON
 //
 // Read-only: all tracker WRITES go through upstream set-status.mjs. The parser
 // is deliberately standalone (no upstream imports) so upstream refactors can't
@@ -13,7 +13,11 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const TRACKER = join(ROOT, 'data', 'applications.md');
+// data/applications.md by default; CAREER_KIT_TRACKER overrides it so tests can
+// point at a throwaway fixture without touching her real tracker.
+const TRACKER = process.env.CAREER_KIT_TRACKER
+  ? resolve(process.env.CAREER_KIT_TRACKER)
+  : join(ROOT, 'data', 'applications.md');
 const PROCEED_THRESHOLD = 4.0; // upstream scoring: mean >= 4.0 means proceed
 
 // Priority groups for --list: what needs her attention first.
@@ -53,14 +57,17 @@ function canonStatus(cell) {
   return aliases[key] ?? key; // unknown states sort after known ones
 }
 
+// Returns { status, rows }: 'absent' (no file yet — normal on day one),
+// 'unreadable' (a file exists but no documented table was found — likely a real
+// problem to surface), or 'ok' (rows parsed, possibly an empty but valid table).
 function parseTracker(path) {
-  if (!existsSync(path)) return null;
+  if (!existsSync(path)) return { status: 'absent', rows: [] };
   const lines = readFileSync(path, 'utf8').split('\n');
   const start = lines.findIndex(
     (l) => l.trim().startsWith('|') && /\|\s*company\s*\|/i.test(l)
   );
   if (start === -1 || !lines[start + 1] || !/^\s*\|[\s:|-]+\|\s*$/.test(lines[start + 1])) {
-    return null; // no recognizable table
+    return { status: 'unreadable', rows: [] }; // a file exists but no table found
   }
   const cells = (l) => l.split('|').slice(1, -1).map((c) => c.trim());
   const headers = cells(lines[start]).map((h) => h.toLowerCase());
@@ -95,7 +102,7 @@ function parseTracker(path) {
       notes: get('notes'),
     });
   }
-  return rows;
+  return { status: 'ok', rows };
 }
 
 const mode = process.argv[2];
@@ -104,11 +111,19 @@ if (mode !== '--next' && mode !== '--list') {
   process.exit(1);
 }
 
-const rows = parseTracker(TRACKER);
+const { status: trackerStatus, rows } = parseTracker(TRACKER);
+
+// A missing tracker is normal on day one; an unreadable one (a file exists but
+// no documented table was found) is a real problem the skill should surface, so
+// the two carry distinct reasons instead of a single "no tracker yet".
+const REASON = {
+  absent: 'no tracker yet',
+  unreadable: 'tracker file found but its table format was not recognized',
+};
 
 if (mode === '--list') {
-  if (rows === null) {
-    console.log(JSON.stringify({ rows: [], reason: 'no tracker yet' }, null, 2));
+  if (trackerStatus !== 'ok') {
+    console.log(JSON.stringify({ rows: [], reason: REASON[trackerStatus] }, null, 2));
     process.exit(0);
   }
   const sorted = [...rows].sort((a, b) => {
@@ -122,8 +137,8 @@ if (mode === '--list') {
 }
 
 // --next: highest-scoring job that is evaluated but not yet applied to.
-if (rows === null || rows.length === 0) {
-  console.log(JSON.stringify({ found: false, reason: 'no tracker yet' }, null, 2));
+if (trackerStatus !== 'ok') {
+  console.log(JSON.stringify({ found: false, reason: REASON[trackerStatus] }, null, 2));
   process.exit(0);
 }
 const candidates = rows

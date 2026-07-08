@@ -281,10 +281,15 @@ that's also covered by Stage 9's grammar/prose pass).
     score descending within a group.
   - A bold `**Interview**` status cell normalizes to the canonical
     `interview` state (markdown decoration stripped before matching).
-  - With no tracker file present, `--next` returns
+  - With no tracker file present (normal on day one), `--next` returns
     `{"found":false,"reason":"no tracker yet"}` and `--list` returns
     `{"rows":[],"reason":"no tracker yet"}`.
-  *(verified during build, 2026-07-07 — fixture suite passed)*
+  - With a tracker file that exists but has no recognizable table (a real
+    problem, distinct from "not started yet"), both commands report
+    `reason: "tracker file found but its table format was not recognized"`
+    instead of the day-one "no tracker yet" message.
+  *(verified during build, 2026-07-07 — fixture suite passed; malformed-vs-missing
+  distinction added 2026-07-08)*
 - [ ] **Simulate a submission.** Take a real row from Stage 4/5 (a job you
   actually scanned/evaluated) and mark it via upstream
   `node set-status.mjs <job-id-or-selector> applied` (consult
